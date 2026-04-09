@@ -1,4 +1,4 @@
-import { useGetPostsQuery } from '../../../shared/api/baseApi'
+import { useGetPostsQuery } from '@/shared/api/baseApi'
 
 export const PostsPage = () => {
   const { data, isLoading, isError } = useGetPostsQuery()
