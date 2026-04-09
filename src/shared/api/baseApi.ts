@@ -17,7 +17,22 @@ export const baseApi = createApi({
       url: `/posts/${id}`,
       method: 'DELETE',
     }),
-    invalidatesTags: ['Post'],
+    async onQueryStarted(id, { dispatch, queryFulfilled }) {
+    // 1. оптимистично обновляем кеш
+      const patchResult = dispatch(
+        baseApi.util.updateQueryData('getPosts', undefined, (draft) => {
+          return draft.filter((post) => post.id !== id)
+        })
+      )
+
+      try {
+        // 2. ждём реальный запрос
+        await queryFulfilled
+      } catch {
+        // 3. если ошибка — откатываем
+        patchResult.undo()
+      }
+    },
   }),
   }),
 })
