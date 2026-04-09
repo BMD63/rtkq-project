@@ -7,5 +7,11 @@ export const baseApi = createApi({
     baseUrl: 'https://jsonplaceholder.typicode.com',
   }),
 
-  endpoints: () => ({}),
+  endpoints: (build) => ({
+    getPosts: build.query<any, void>({
+      query: () => '/posts',
+    }),
+  }),
 })
+
+export const { useGetPostsQuery } = baseApi
