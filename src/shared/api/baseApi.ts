@@ -10,13 +10,23 @@ export const baseApi = createApi({
   endpoints: (build) => ({
     getPosts: build.query<Post[], void>({
       query: () => '/posts',
-      providesTags: ['Post'],
+
+      providesTags: (result) =>
+        result
+          ? [
+              { type: 'Post', id: 'LIST' },
+              ...result.map((post) => ({ type: 'Post', id: post.id } as const)),
+            ]
+          : [{ type: 'Post', id: 'LIST' } as const],
     }),
     deletePost: build.mutation<void, number>({
       query: (id) => ({
         url: `/posts/${id}`,
         method: 'DELETE',
       }),
+      invalidatesTags: (_result, _error, id) => [
+          { type: 'Post', id },
+        ],
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
       // 1. оптимистично обновляем кеш
         const patchResult = dispatch(
