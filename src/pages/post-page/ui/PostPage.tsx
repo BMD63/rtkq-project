@@ -1,4 +1,4 @@
-import { useGetPostsQuery, useDeletePostMutation, useCreatePostMutation } from '@/shared/api/baseApi'
+import { useGetPostsQuery, useDeletePostMutation, useCreatePostMutation } from '@/entities/post/api/postApi'
 
 export const PostsPage = () => {
   const { data, isLoading, isError } = useGetPostsQuery()
