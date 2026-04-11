@@ -9,13 +9,16 @@ export const postApi = baseApi.injectEndpoints({
         params: search ? { q: search } : {},
       }),
 
-      providesTags: (result) =>
+      providesTags: (result, _error, search) =>
         result
           ? [
-              { type: 'Post', id: 'LIST' } as const,
-              ...result.map((post) => ({ type: 'Post', id: post.id } as const)),
+              { type: 'Post', id: `LIST-${search}` } as const,
+              ...result.map((post) => ({
+                type: 'Post',
+                id: `${post.id}-${search}`,
+              }) as const),
             ]
-          : [{ type: 'Post', id: 'LIST' } as const],
+          : [{ type: 'Post', id: `LIST-${search}` } as const],
     }),
 
     deletePost: build.mutation<void, number>({
@@ -29,8 +32,9 @@ export const postApi = baseApi.injectEndpoints({
       ],
 
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        // optimistic (локально)
         const patchResult = dispatch(
-          postApi.util.updateQueryData('getPosts', undefined, (draft) => {
+          postApi.util.updateQueryData('getPosts', '', (draft) => {
             return draft.filter((post) => post.id !== id)
           })
         )
@@ -39,8 +43,13 @@ export const postApi = baseApi.injectEndpoints({
           await queryFulfilled
         } catch {
           patchResult.undo()
+        } finally {
+          // синхронизация всех кешей
+          dispatch(
+            postApi.util.invalidateTags([{ type: 'Post' }])
+          )
         }
-      },
+      }
     }),
 
     createPost: build.mutation<Post, Partial<Post>>({
