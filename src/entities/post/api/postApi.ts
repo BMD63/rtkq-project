@@ -1,5 +1,6 @@
 import { baseApi } from '@/shared/api/baseApi'
 import type { Post } from '../model/types'
+import { addSearchKey, getSearchKeys } from '@/shared/lib/cache/searchCache'
 
 export const postApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
@@ -8,6 +9,12 @@ export const postApi = baseApi.injectEndpoints({
         url: '/posts',
         params: search ? { q: search } : {},
       }),
+      async onQueryStarted(search, { queryFulfilled }) {
+        try {
+          await queryFulfilled
+          addSearchKey(search) // 🔥 сохраняем ключ
+        } catch {}
+      },
 
       providesTags: (result, _error, search) =>
         result
@@ -32,22 +39,26 @@ export const postApi = baseApi.injectEndpoints({
       ],
 
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
-        // optimistic (локально)
-        const patchResult = dispatch(
-          postApi.util.updateQueryData('getPosts', '', (draft) => {
-            return draft.filter((post) => post.id !== id)
-          })
+        const searchKeys = getSearchKeys()
+
+        // 🔥 обновляем ВСЕ кеши
+        const patches = searchKeys.map((search) =>
+          dispatch(
+            postApi.util.updateQueryData(
+              'getPosts',
+              search,
+              (draft: Post[]) => {
+                return draft.filter((post) => post.id !== id)
+              }
+            )
+          )
         )
 
         try {
           await queryFulfilled
         } catch {
-          patchResult.undo()
-        } finally {
-          // синхронизация всех кешей
-          dispatch(
-            postApi.util.invalidateTags([{ type: 'Post' }])
-          )
+          // 🔥 откат всех кешей
+          patches.forEach((patch) => patch.undo())
         }
       }
     }),
