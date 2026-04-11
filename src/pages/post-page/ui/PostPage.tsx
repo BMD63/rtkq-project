@@ -1,17 +1,14 @@
 import { useGetPostsQuery } from '@/entities/post/api/postApi'
 import { PostList } from '@/entities/post/ui/PostList'
 import { CreatePostButton } from '@/features/create-post/ui/CreatePostButton'
-import { usePostSearch } from '@/features/search-post/model/usePostSearch'
 import { SearchInput } from '@/features/search-post/ui/SearchInput'
+import { useDebounce } from '@/shared/lib/hooks/useDebounce'
+import { useState } from 'react'
 
 export const PostsPage = () => {
-  const { data, isLoading, isError } = useGetPostsQuery()
-  
-  const {
-  query,
-  setQuery,
-  filteredPosts,
-} = usePostSearch(data)
+  const [query, setQuery] = useState('')
+  const debouncedQuery = useDebounce(query, 300)
+  const { data, isLoading, isError } = useGetPostsQuery(debouncedQuery)
 
   if (isLoading) return <div>Loading...</div>
   if (isError) return <div>Error</div>
@@ -24,8 +21,7 @@ export const PostsPage = () => {
 
       <SearchInput value={query} onChange={setQuery} />
 
-      <PostList posts={filteredPosts} />
-
+      {data && <PostList posts={data} />}
     </div>
   )
 }

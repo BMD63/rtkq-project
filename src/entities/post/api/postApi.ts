@@ -3,8 +3,11 @@ import type { Post } from '../model/types'
 
 export const postApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
-    getPosts: build.query<Post[], void>({
-      query: () => '/posts',
+    getPosts: build.query<Post[], string>({
+      query: (search = '') => ({
+        url: '/posts',
+        params: search ? { q: search } : {},
+      }),
 
       providesTags: (result) =>
         result
