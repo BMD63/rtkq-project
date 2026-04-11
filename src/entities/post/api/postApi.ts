@@ -4,17 +4,24 @@ import { addSearchKey, getSearchKeys } from '@/shared/lib/cache/searchCache'
 
 export const postApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
-    getPosts: build.query<Post[], string>({
-      query: (search = '') => ({
+    getPosts: build.query<Post[], { search: string; page: number }>({
+      query: ({ search, page }) => ({
         url: '/posts',
-        params: search ? { q: search } : {},
+        params: {
+          q: search || undefined,
+          _page: page,
+          _limit: 10,
+        },
       }),
-      async onQueryStarted(search, { queryFulfilled }) {
-        try {
-          await queryFulfilled
-          addSearchKey(search) // 🔥 сохраняем ключ
-        } catch {}
-      },
+      async onQueryStarted(
+        { search, page }, 
+        { queryFulfilled }) 
+        {
+          try {
+            await queryFulfilled
+            addSearchKey({search, page }) // 🔥 сохраняем ключ
+          } catch {}
+        },
 
       providesTags: (result, _error, search) =>
         result
@@ -42,11 +49,11 @@ export const postApi = baseApi.injectEndpoints({
         const searchKeys = getSearchKeys()
 
         // 🔥 обновляем ВСЕ кеши
-        const patches = searchKeys.map((search) =>
+        const patches = searchKeys.map(({ search, page }) =>
           dispatch(
             postApi.util.updateQueryData(
               'getPosts',
-              search,
+              { search, page },
               (draft: Post[]) => {
                 return draft.filter((post) => post.id !== id)
               }
@@ -74,7 +81,10 @@ export const postApi = baseApi.injectEndpoints({
 
       async onQueryStarted(newPost, { dispatch, queryFulfilled }) {
         const patchResult = dispatch(
-          postApi.util.updateQueryData('getPosts', undefined, (draft) => {
+          postApi.util.updateQueryData(
+            'getPosts', 
+            { search: '', page: 1 }, 
+            (draft) => {
             draft.unshift({
               id: Date.now(),
               userId: newPost.userId ?? 1,

@@ -1,9 +1,16 @@
-const searchCache = new Set<string>()
+type SearchKey = {
+  search: string
+  page: number
+}
 
-export const addSearchKey = (key: string) => {
-  searchCache.add(key)
+const searchCache = new Set<string>()
+const makeKey = (key: SearchKey) =>
+  JSON.stringify(key)
+
+export const addSearchKey = (key: SearchKey) => {
+  searchCache.add(makeKey(key))
 }
 
 export const getSearchKeys = () => {
-  return Array.from(searchCache)
+  return Array.from(searchCache).map((k) => JSON.parse(k) as SearchKey)
 }

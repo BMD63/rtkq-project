@@ -10,27 +10,37 @@ export const PostsPage = () => {
   const [params, setParams] = useSearchParams()
 
   const initialSearch = params.get('search') ?? ''
+  const initialPage = Number(params.get('page') ?? 1)
+
   const [query, setQuery] = useState(initialSearch)
+  const [page, setPage] = useState(initialPage)
 
   const debouncedQuery = useDebounce(query, 300)
 
-  const { data, isLoading, isError } = useGetPostsQuery(debouncedQuery)
+  const { data, isLoading, isError } = useGetPostsQuery({
+    search: debouncedQuery,
+    page,
+  })
 
   useEffect(() => {
-    if (debouncedQuery) {
-      setParams((prev) => {
-        const newParams = new URLSearchParams(prev)
+    setParams((prev) => {
+      const newParams = new URLSearchParams(prev)
 
-        if (debouncedQuery) {
-          newParams.set('search', debouncedQuery)
-        } else {
-          newParams.delete('search')
-        }
+      if (debouncedQuery) {
+        newParams.set('search', debouncedQuery)
+      } else {
+        newParams.delete('search')
+      }
 
-        return newParams
-      })
-          }
-  }, [debouncedQuery, setParams])
+      newParams.set('page', String(page))
+
+      return newParams
+    })
+  }, [debouncedQuery, page, setParams])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedQuery])
 
   if (isLoading) return <div>Loading...</div>
   if (isError) return <div>Error</div>
@@ -44,6 +54,16 @@ export const PostsPage = () => {
       <SearchInput value={query} onChange={setQuery} />
 
       {data && <PostList posts={data} />}
-    </div>
-  )
-}
+
+      <button onClick={() => setPage((p) => Math.max(1, p - 1))}>
+        Prev
+      </button>
+
+      <span>Page: {page}</span>
+
+      <button onClick={() => setPage((p) => p + 1)}>
+        Next
+      </button>
+          </div>
+        )
+      }
