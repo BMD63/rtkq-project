@@ -5,6 +5,8 @@ import { SearchInput } from '@/features/search-post/ui/SearchInput'
 import { useDebounce } from '@/shared/lib/hooks/useDebounce'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Stack } from '@/shared/ui/Stack'
+import { Row } from '@/shared/ui/Row'
 
 export const PostsPage = () => {
   const [params, setParams] = useSearchParams()
@@ -46,24 +48,26 @@ export const PostsPage = () => {
   if (isError) return <div>Error</div>
 
   return (
-    <div>
+    <Stack>
       <h1>Posts</h1>
 
-      <CreatePostButton />
-
-      <SearchInput value={query} onChange={setQuery} />
-
+      <Row>
+        <CreatePostButton />
+        <SearchInput value={query} onChange={setQuery} />
+      </Row>
+      
       {data && <PostList posts={data} />}
 
+      <Row>
       <button onClick={() => setPage((p) => Math.max(1, p - 1))}>
         Prev
       </button>
-
       <span>Page: {page}</span>
-
       <button onClick={() => setPage((p) => p + 1)}>
         Next
       </button>
-          </div>
-        )
+      </Row>
+      
+    </Stack>
+  )
       }
