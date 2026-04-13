@@ -1,15 +1,24 @@
-import {useState} from 'react'
+type Props = {
+  page: number
+  setPage: (page: number) => void
+  hasNext?: boolean
+}
 
-export const usePagination = (initialPage = 1) => {
-  const [page, setPage] = useState(initialPage)
+export const usePagination = ({ page, setPage, hasNext }: Props) => {
+  const next = () => {
+    if (hasNext === false) return
+    setPage(page + 1)
+  }
 
-  const next = () => setPage((p) => p + 1)
-  const prev = () => setPage((p) => Math.max(1, p - 1))
+  const prev = () => {
+    setPage(Math.max(1, page - 1))
+  }
 
   return {
     page,
     next,
     prev,
-    setPage,
+    canPrev: page > 1,
+    canNext: hasNext !== false,
   }
 }

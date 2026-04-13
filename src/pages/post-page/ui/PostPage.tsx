@@ -5,7 +5,6 @@ import { SearchInput } from '@/features/search-post/ui/SearchInput'
 import { useDebounce } from '@/shared/lib/hooks/useDebounce'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import {usePagination } from '@/features/pagination/model/usePagination'
 import { Stack } from '@/shared/ui/Stack'
 import { Row } from '@/shared/ui/Row'
 import { Pagination } from '@/features/pagination/ui/Pagination'
@@ -15,9 +14,9 @@ export const PostsPage = () => {
 
   const initialSearch = params.get('search') ?? ''
   const initialPage = Number(params.get('page') ?? 1)
-
+  const [page, setPage] = useState(initialPage)
   const [query, setQuery] = useState(initialSearch)
-  const { setPage, page, next, prev } = usePagination(initialPage)
+
 
   const debouncedQuery = useDebounce(query, 300)
 
@@ -41,7 +40,7 @@ export const PostsPage = () => {
     }, [debouncedQuery, page, setParams])
 
   useEffect(() => {
-    setPage(1)
+    if (page !== 1) setPage(1)
   }, [query])
 
   if (isLoading) return <div>Loading...</div>
@@ -51,7 +50,7 @@ export const PostsPage = () => {
     <Stack>
       <h1>Posts</h1>
 
-      <Row>
+      <Row justify="center">
         <CreatePostButton />
         <SearchInput value={query} onChange={setQuery} />
       </Row>
@@ -60,7 +59,10 @@ export const PostsPage = () => {
 
       {data && <PostList posts={data} />}
 
-      <Pagination page={page} onNext={next} onPrev={prev} />
+      <Pagination
+        page={page}
+        setPage={setPage}
+      />
       
       
     </Stack>

@@ -1,15 +1,27 @@
+import { Row } from '@/shared/ui/Row'
+import { usePagination } from '../model/usePagination'
+
 type Props = {
   page: number
-  onNext: () => void
-  onPrev: () => void
+  setPage: (page: number) => void
+  hasNext?: boolean
 }
 
-export const Pagination = ({ page, onNext, onPrev }: Props) => {
+export const Pagination = (props: Props) => {
+  const { page, next, prev, canNext, canPrev } =
+    usePagination(props)
+
   return (
-    <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-      <button onClick={onPrev}>Prev</button>
-      <span>{page}</span>
-      <button onClick={onNext}>Next</button>
-    </div>
+    <Row justify="center" gap={16}>
+      <button onClick={prev} disabled={!canPrev}>
+        Prev
+      </button>
+
+      <span>Page: {page}</span>
+
+      <button onClick={next} disabled={!canNext}>
+        Next
+      </button>
+    </Row>
   )
 }
