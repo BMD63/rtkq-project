@@ -17,7 +17,6 @@ export const PostsPage = () => {
   const [page, setPage] = useState(initialPage)
   const [query, setQuery] = useState(initialSearch)
 
-
   const debouncedQuery = useDebounce(query, 300)
 
   const { data, isLoading, isError, isFetching } = useGetPostsQuery({
@@ -25,9 +24,13 @@ export const PostsPage = () => {
     page,
   })
 
+  const posts = data?.data ?? []
+  const total = data?.total ?? 0
 
+  const totalPages = Math.ceil(total / 10)
+  const hasNext = page < totalPages
 
-  useEffect(() => {
+    useEffect(() => {
     const newParams = new URLSearchParams()
 
       if (debouncedQuery) {
@@ -57,11 +60,12 @@ export const PostsPage = () => {
       
       {isFetching && <div>Updating...</div>}
 
-      {data && <PostList posts={data} />}
+      {data && <PostList posts={posts} />}
 
       <Pagination
         page={page}
         setPage={setPage}
+        hasNext={hasNext}
       />
       
       

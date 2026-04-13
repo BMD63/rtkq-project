@@ -4,7 +4,10 @@ import { addSearchKey, getSearchKeys } from '@/shared/lib/cache/searchCache'
 
 export const postApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
-    getPosts: build.query<Post[], { search: string; page: number }>({
+    getPosts: build.query<
+      { data: Post[]; total: number },
+      { search: string; page: number }
+    >({
       query: ({ search, page }) => ({
         url: '/posts',
         params: {
@@ -13,26 +16,38 @@ export const postApi = baseApi.injectEndpoints({
           _limit: 10,
         },
       }),
-      async onQueryStarted(
-        { search, page }, 
-        { queryFulfilled }) 
-        {
-          try {
-            await queryFulfilled
-            addSearchKey({search, page }) // 🔥 сохраняем ключ
-          } catch {}
-        },
 
-      providesTags: (result, _error, search) =>
+      transformResponse: (response: Post[], meta) => {
+        const total = Number(
+          meta?.response?.headers.get('x-total-count') ?? 0
+        )
+
+        return {
+          data: response,
+          total,
+        }
+      },
+
+      async onQueryStarted(
+        { search, page },
+        { queryFulfilled }
+      ) {
+        try {
+          await queryFulfilled
+          addSearchKey({ search, page })
+        } catch {}
+      },
+
+      providesTags: (result, _error, { search, page }) =>
         result
           ? [
-              { type: 'Post', id: `LIST-${search}` } as const,
-              ...result.map((post) => ({
+              { type: 'Post', id: `LIST-${search}-${page}` } as const,
+              ...result.data.map((post) => ({
                 type: 'Post',
-                id: `${post.id}-${search}`,
+                id: `${post.id}-${search}-${page}`,
               }) as const),
             ]
-          : [{ type: 'Post', id: `LIST-${search}` } as const],
+          : [{ type: 'Post', id: `LIST-${search}-${page}` } as const],
     }),
 
     deletePost: build.mutation<void, number>({
@@ -54,12 +69,11 @@ export const postApi = baseApi.injectEndpoints({
             postApi.util.updateQueryData(
               'getPosts',
               { search, page },
-              (draft: Post[]) => {
-                return draft.filter((post) => post.id !== id)
+              (draft) => {
+                draft.data = draft.data.filter((post) => post.id !== id)
               }
             )
-          )
-        )
+          ))
 
         try {
           await queryFulfilled
@@ -85,7 +99,7 @@ export const postApi = baseApi.injectEndpoints({
             'getPosts', 
             { search: '', page: 1 }, 
             (draft) => {
-            draft.unshift({
+            draft.data.unshift({
               id: Date.now(),
               userId: newPost.userId ?? 1,
               title: newPost.title ?? '',
