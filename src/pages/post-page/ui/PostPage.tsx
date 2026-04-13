@@ -11,40 +11,60 @@ import { Pagination } from '@/features/pagination/ui/Pagination'
 
 export const PostsPage = () => {
   const [params, setParams] = useSearchParams()
+  const search = params.get('q') ?? ''
+  const page = Number(params.get('page') ?? 1)
 
-  const initialSearch = params.get('search') ?? ''
-  const initialPage = Number(params.get('page') ?? 1)
-  const [page, setPage] = useState(initialPage)
-  const [query, setQuery] = useState(initialSearch)
+  const setSearch = (value: string) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
 
-  const debouncedQuery = useDebounce(query, 300)
+      if (value) {
+        next.set('q', value)
+      } else {
+        next.delete('q')
+      }
+
+      next.set('page', '1') // 🔥 сброс страницы
+
+      return next
+    })
+  }
+
+  const setPage = (value: number) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('page', String(value))
+      return next
+    })
+}
+
+  const [input, setInput] = useState(search)
+  const debounced = useDebounce(input, 300)
 
   const { data, isLoading, isError, isFetching } = useGetPostsQuery({
-    search: debouncedQuery,
+    search, // ✅ из URL
     page,
   })
+
+  // debounce → URL
+  useEffect(() => {
+    if (debounced !== search) {
+      setSearch(debounced)
+    }
+  }, [debounced, search])
+
+  // URL → input (back/forward)
+  useEffect(() => {
+    if (input !== search) {
+      setInput(search)
+    }
+  }, [search])
 
   const posts = data?.data ?? []
   const total = data?.total ?? 0
 
   const totalPages = Math.ceil(total / 10)
   const hasNext = page < totalPages
-
-    useEffect(() => {
-    const newParams = new URLSearchParams()
-
-      if (debouncedQuery) {
-        newParams.set('search', debouncedQuery)
-      }
-
-      newParams.set('page', String(page))
-
-      setParams(newParams)
-    }, [debouncedQuery, page, setParams])
-
-  useEffect(() => {
-    if (page !== 1) setPage(1)
-  }, [query])
 
   if (isLoading) return <div>Loading...</div>
   if (isError) return <div>Error</div>
@@ -55,7 +75,7 @@ export const PostsPage = () => {
 
       <Row justify="center">
         <CreatePostButton />
-        <SearchInput value={query} onChange={setQuery} />
+        <SearchInput value={input} onChange={setInput} />
       </Row>
       
       {isFetching && <div>Updating...</div>}
