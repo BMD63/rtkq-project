@@ -14,22 +14,6 @@ export const PostsPage = () => {
   const search = params.get('q') ?? ''
   const page = Number(params.get('page') ?? 1)
 
-  const setSearch = (value: string) => {
-    setParams((prev) => {
-      const next = new URLSearchParams(prev)
-
-      if (value) {
-        next.set('q', value)
-      } else {
-        next.delete('q')
-      }
-
-      next.set('page', '1') // 🔥 сброс страницы
-
-      return next
-    })
-  }
-
   const setPage = (value: number) => {
     setParams((prev) => {
       const next = new URLSearchParams(prev)
@@ -48,12 +32,26 @@ export const PostsPage = () => {
 
   // debounce → URL
   useEffect(() => {
-    if (debounced !== search) {
-      setSearch(debounced)
-    }
-  }, [debounced, search])
+    setParams((prev) => {
+      const current = prev.get('q') ?? ''
 
-  // URL → input (back/forward)
+      if (current === debounced) return prev
+
+      const next = new URLSearchParams(prev)
+
+      if (debounced) {
+        next.set('q', debounced)
+      } else {
+        next.delete('q')
+      }
+
+      next.set('page', '1')
+
+      return next
+    })
+  }, [debounced])
+
+  // URL → input
   useEffect(() => {
     if (input !== search) {
       setInput(search)
