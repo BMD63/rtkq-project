@@ -2,12 +2,13 @@ import { useGetPostsQuery } from '@/entities/post/api/postApi'
 import { PostList } from '@/entities/post/ui/PostList'
 import { CreatePostButton } from '@/features/create-post/ui/CreatePostButton'
 import { SearchInput } from '@/features/search-post/ui/SearchInput'
-import { useDebounce } from '@/shared/lib/hooks/useDebounce'
+import { useDebounce, useAppDispatch} from '@/shared/lib/hooks'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Stack } from '@/shared/ui/Stack'
 import { Row } from '@/shared/ui/Row'
 import { Pagination } from '@/features/pagination/ui/Pagination'
+import { postApi } from '@/entities/post/api/postApi'
 
 export const PostsPage = () => {
   const [params, setParams] = useSearchParams()
@@ -22,6 +23,8 @@ export const PostsPage = () => {
     })
 }
 
+  const dispatch = useAppDispatch()
+
   const [input, setInput] = useState(search)
   const debounced = useDebounce(input, 300)
 
@@ -30,7 +33,7 @@ export const PostsPage = () => {
     page,
   })
 
-  // debounce → URL
+    // debounce → URL
   useEffect(() => {
     setParams((prev) => {
       const current = prev.get('q') ?? ''
@@ -66,6 +69,22 @@ export const PostsPage = () => {
 
   if (isLoading) return <div>Loading...</div>
   if (isError) return <div>Error</div>
+
+  // Prefetch
+
+  useEffect(() => {
+    if (!hasNext) return
+
+    const nextPage = page + 1
+
+    dispatch(
+      postApi.util.prefetch('getPosts', {
+        search,
+        page: nextPage,
+      }, 
+      { force: false })
+    )
+  }, [page, search, hasNext, dispatch])
 
   return (
     <Stack>
