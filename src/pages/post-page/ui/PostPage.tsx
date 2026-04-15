@@ -1,6 +1,7 @@
 import { PostList } from '@/entities/post/ui/PostList'
 import { CreatePostButton } from '@/features/create-post/ui/CreatePostButton'
 import { SearchInput } from '@/features/search-post/ui/SearchInput'
+import { PostSkeletonList } from '@/entities/post/ui/PostSkeletonList'
 import { useDebounce, useIntersection} from '@/shared/lib/hooks'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -55,7 +56,7 @@ export const PostsPage = () => {
   if (isError) return <div>Error</div>
 
   if (!items.length && isFetching) {
-    return <div>Loading...</div>
+    return <PostSkeletonList count={5} />
   }
 
   return (
@@ -70,6 +71,10 @@ export const PostsPage = () => {
       {isFetching && <div>Loading more...</div>}
 
       {items.length > 0 && <PostList posts={items} />}
+
+      {isFetching && items.length > 0 && (
+        <PostSkeletonList count={3} />
+      )}    
       
 
       <div ref={loadMoreRef} />
