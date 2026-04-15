@@ -1,7 +1,7 @@
 import { PostList } from '@/entities/post/ui/PostList'
 import { CreatePostButton } from '@/features/create-post/ui/CreatePostButton'
 import { SearchInput } from '@/features/search-post/ui/SearchInput'
-import { useDebounce } from '@/shared/lib/hooks'
+import { useDebounce, useIntersection} from '@/shared/lib/hooks'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Stack } from '@/shared/ui/Stack'
@@ -43,6 +43,8 @@ export const PostsPage = () => {
     })
   }, [debounced, setParams])
 
+  const loadMoreRef = useIntersection(loadMore, hasMore)
+
   // URL → input
   useEffect(() => {
     if (input !== search) {
@@ -65,15 +67,13 @@ export const PostsPage = () => {
         <SearchInput value={input} onChange={setInput} />
       </Row>
       
-      {isFetching && items.length > 0 && <div>Loading more...</div>}
+      {isFetching && <div>Loading more...</div>}
 
       {items.length > 0 && <PostList posts={items} />}
+      
 
-      {hasMore && (
-        <button onClick={loadMore}>
-          {isFetching ? 'Loading...' : 'Load more'}
-        </button>
-      )}
+      <div ref={loadMoreRef} />
+
     </Stack>
   )
 }
