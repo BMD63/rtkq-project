@@ -2,58 +2,55 @@ import { PostList } from '@/entities/post/ui/PostList'
 import { CreatePostButton } from '@/features/create-post/ui/CreatePostButton'
 import { SearchInput } from '@/features/search-post/ui/SearchInput'
 import { PostSkeletonList } from '@/entities/post/ui/PostSkeletonList'
-import { useDebounce, useIntersection} from '@/shared/lib/hooks'
-import { useState, useEffect } from 'react'
+import { useDebounce, useIntersection } from '@/shared/lib/hooks'
 import { useSearchParams } from 'react-router-dom'
 import { Stack } from '@/shared/ui/Stack'
 import { Row } from '@/shared/ui/Row'
 import { useInfinitePosts } from '@/features/pagination/model/useInfinitePosts'
+import { useCallback } from 'react'
 
 export const PostsPage = () => {
-  
-  // URL
   const [params, setParams] = useSearchParams()
+  
+  // 🔥 ЕДИНСТВЕННЫЙ источник правды — URL
   const search = params.get('q') ?? ''
-
-  // Local state
-  const [input, setInput] = useState(search)
-  const debounced = useDebounce(input, 300)
-
-  // Data fetching
+  
+  // 🔥 Debounce применяем прямо к URL-значению
+  const debouncedSearch = useDebounce(search, 300)
+  
+  // Data fetching (уже зависит от debouncedSearch)
   const {
     items,
     loadMore,
     isFetching,
     hasMore,
     isError,
-  } = useInfinitePosts(debounced)
+  } = useInfinitePosts(debouncedSearch)
 
-  
-  // debounce → URL
-  useEffect(() => {
-    setParams((prev) => {
-      const current = prev.get('q') ?? ''
-      if (current === debounced) return prev
-
+  // 🔥 Обновляем URL через callback — никаких эффектов
+  const handleSearchChange = useCallback((newSearch: string) => {
+    setParams(prev => {
       const next = new URLSearchParams(prev)
-      if (debounced) next.set('q', debounced)
-      else next.delete('q')
+      
+      if (newSearch) {
+        next.set('q', newSearch)
+      } else {
+        next.delete('q')
+      }
+      
+      // Сброс пагинации при новом поиске
       next.set('page', '1')
-
+      
       return next
     })
-  }, [debounced, setParams])
+  }, [setParams])
 
   const loadMoreRef = useIntersection(loadMore, hasMore)
 
-  // URL → input
-  useEffect(() => {
-    if (input !== search) {
-      setInput(search)
-    }
-  }, [search, input])
-
-  if (isError) return <div>Error</div>
+  // Обработка ошибок и состояний загрузки
+  if (isError) {
+    return <div>Error loading posts</div>
+  }
 
   if (!items.length && isFetching) {
     return <PostSkeletonList count={5} />
@@ -65,7 +62,12 @@ export const PostsPage = () => {
 
       <Row justify="center">
         <CreatePostButton />
-        <SearchInput value={input} onChange={setInput} />
+        
+        {/* 🔥 Прямая связь: value из URL, onChange в URL */}
+        <SearchInput 
+          value={search}  // ← берем из URL, не из локального state
+          onChange={handleSearchChange}
+        />
       </Row>
       
       {isFetching && <div>Loading more...</div>}
@@ -76,9 +78,7 @@ export const PostsPage = () => {
         <PostSkeletonList count={3} />
       )}    
       
-
       <div ref={loadMoreRef} />
-
     </Stack>
   )
 }
